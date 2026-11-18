@@ -158,14 +158,17 @@
 
 ## 8. 첨부 파일
 
-사용법·요구사항은 `tools/README.md`. 스크립트는 FFmpeg 7+ (libass 포함)와 ffprobe만 있으면 되고, GPU·Node·추가 파이썬 패키지는 불필요.
+사용법·요구사항은 `subong-video/README.md`. 스크립트는 FFmpeg 7+ (libass 포함)와 ffprobe만 있으면 되고, GPU·Node·추가 파이썬 패키지는 불필요.
 
 | 경로 | 내용 |
 |---|---|
-| `tools/README.md` | 실행 방법·환경 요구사항 |
-| `tools/vertical_pack.sh` | 크롭→업스케일→세로 합성→자막 (테스트 완료) |
-| `tools/karaoke_ass.py` | whisper 단어 타임스탬프 → ASS 가라오케 자막 (테스트 완료) |
-| `tools/qc_check.py` | 해상도·바·컷 간격·음량 자동 검수 (테스트 완료) |
+| `subong-video/README.md` | 실행 방법·환경 요구사항 |
+| `subong-video/vertical_pack.sh` | 크롭→업스케일→세로 합성→자막 (테스트 완료) |
+| `subong-video/karaoke_ass.py` | whisper 단어 타임스탬프 → ASS 가라오케 자막 (테스트 완료) |
+| `subong-video/qc_check.py` | 해상도·바·컷 간격·음량 자동 검수 (테스트 완료) |
+| `cheose-lipsync/` | Rhubarb 자동 립싱크 + 컨택트시트 |
+
+> 아래 검증 이미지·연구용 샘플(`media/…`)은 용량 때문에 저장소에 넣지 않았습니다. 본문의 `media/…`는 원본 작업 환경의 경로입니다.
 | `media/compare_upscale.png` | 업스케일 4종 비교 |
 | `media/tool_karaoke_check.png` | 한국어 워드 하이라이트 4프레임 |
 | `media/before_after_vertical.png`, `media/packed_frame_small.png` | 세로 패키징 전/후 |

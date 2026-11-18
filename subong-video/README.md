@@ -64,7 +64,7 @@ python3 qc_check.py out.mp4 --ffprobe /path/to/ffprobe --ffmpeg /path/to/ffmpeg
 | `vertical_pack.sh` | `--up neighbor`/`lanczos` 를 줘도 둘 다 lanczos 로 렌더 | 지정 필터를 그대로 쓰도록 수정 |
 | `vertical_pack.sh` | xbr 배율이 자동(320→1080 = xbr4)이라 3배 고정 불가 | `--xbr-n` 옵션 추가 |
 
-원본 백업: `karaoke_ass.py.bak-before-colorfix`
+원본 백업(`karaoke_ass.py.bak-before-colorfix`)은 저장소에 넣지 않았습니다 — 필요하면 쟈부장에게 요청.
 
 ### faster-whisper 주의 (단어 타임스탬프 만들 때)
 - `av` 패키지 버전에 따라 `transcribe("file.wav")` 가 `TypeError: unexpected keyword argument 'metadata_errors'` 로 죽는다.
