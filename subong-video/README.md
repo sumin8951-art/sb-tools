@@ -53,7 +53,9 @@ ffmpeg -i in.mp4 -vf "ass=subs.ass:fontsdir=/path/to/fonts" -c:v libx264 -crf 18
 python3 qc_check.py out.mp4 --ffprobe /path/to/ffprobe --ffmpeg /path/to/ffmpeg
 ```
 판정 항목: 720p+, 9:16, 30fps+, 검은 바 여백<2%, 최대 컷 간격 ≤5초, 음량 -14 LUFS ±3.
-주의: 검은 바 판정은 어두운 배경 디자인에서 오탐할 수 있음 → FAIL이면 눈으로 확인.
+주의 ①: 검은 바 판정은 어두운 배경 디자인에서 오탐할 수 있음 → FAIL이면 눈으로 확인.
+주의 ②: `cropdetect`가 아무 결과도 못 내면 **검사를 못 한 것**이므로
+`[FAIL] 검은 바 자동검출 실패 (수동 확인 필요)` 로 보고한다(PASS로 흘리지 않는다). 요약에도 "자동검출 불가 항목 포함"이 붙는다.
 
 ## 4) 2026-11-19 수봉TV 파일럿에서 고친 것 (이 버전부터 적용)
 | 파일 | 증상 | 조치 |
@@ -63,6 +65,9 @@ python3 qc_check.py out.mp4 --ffprobe /path/to/ffprobe --ffmpeg /path/to/ffmpeg
 | `vertical_pack.sh` | `--ass` 로 자막을 넣어도 번들 폰트를 못 찾아 대체 폰트로 렌더 | `--fonts` 옵션 추가(`fontsdir=`) |
 | `vertical_pack.sh` | `--up neighbor`/`lanczos` 를 줘도 둘 다 lanczos 로 렌더 | 지정 필터를 그대로 쓰도록 수정 |
 | `vertical_pack.sh` | xbr 배율이 자동(320→1080 = xbr4)이라 3배 고정 불가 | `--xbr-n` 옵션 추가 |
+| `qc_check.py` | `cropdetect` 결과가 없을 때 "검은 바 없음"을 PASS로 통과 | `[FAIL] 검은 바 자동검출 실패 (수동 확인 필요)` + 요약에 "자동검출 불가 항목 포함", JSON `crop_detected` |
+| `vertical_pack.sh` | `--no-crop --up xbr`(=`--xbr-n` 없음)에서 원본 폭이 작으면(240x180 실측) `flags=xbr` 이라는 없는 옵션으로 떨어져 렌더 실패 | 입력 폭을 ffprobe(없으면 ffmpeg 헤더)로 읽어 정수배 계산, 부족하면 `xbr=4 + scale flags=neighbor`. `--xbr-n` 은 2·3·4만 허용 |
+| `vertical_pack.sh` | `--no-crop` 에서 해상도 파싱이 ffmpeg 로그의 다른 `0x1` 토큰을 먼저 집을 수 있던 문제 | `[0-9]{2,5}x[0-9]{2,5}` 로 제한 + ffprobe 우선 |
 
 원본 백업(`karaoke_ass.py.bak-before-colorfix`)은 저장소에 넣지 않았습니다 — 필요하면 쟈부장에게 요청.
 
