@@ -19,6 +19,7 @@ cd sb-tools
 |---|---|---|
 | `subong-video/` | 수봉TV 파이프라인 — 검은 바 크롭 → 픽셀아트 업스케일 → 9:16 합성 → 한국어 워드 하이라이트 자막 / 자동 QC | 에대리 |
 | `cheose-lipsync/` | 처세의 정석 파이프라인 — Rhubarb 한국어 자동 립싱크(입모양 재드로잉) / 컨택트시트 검수 | 팅사원 |
+| `motion-fx/` | 2D 모션 프리셋 — 슈퍼샘플 켄번즈(줌·팬) / 임팩트 셰이크 / 눈깜박임·식은땀·느낌표 파츠 오버레이 / 모션 검수 | 팅사원·에대리 |
 | `REPORT.md` | 툴 선정 근거와 실측 수치(벤치마크 요약). 왜 이 도구인지 확인할 때 | 전원 |
 
 ---
@@ -31,7 +32,7 @@ cd sb-tools
 | **ffprobe** | `qc_check.py` 사용 시 (ffmpeg와 같은 폴더에 있으면 자동 인식) | `ffprobe -version` |
 | **python3** | 3.10 이상. `qc_check.py`는 표준 라이브러리만 사용 | `python3 -V` |
 | **Rhubarb Lip Sync v1.14.0** | 처세 립싱크 전용 (MIT). 저장소에는 용량(87MB) 때문에 **바이너리를 넣지 않았습니다** — 아래 링크에서 받으세요 | `rhubarb --version` |
-| Python 패키지 | `cheose-lipsync`만 Pillow(+`make_contact_sheet.py`는 numpy) 필요: `pip install pillow numpy` | — |
+| Python 패키지 | `cheose-lipsync`와 `motion-fx`는 Pillow 필요: `pip install pillow` (`make_contact_sheet.py`는 numpy도) | — |
 | 한국어 폰트 | Noto Sans KR / Pretendard 등. `--fonts`로 폴더 지정 | — |
 
 **Rhubarb 다운로드 (v1.14.0, OS별 zip 87MB, MIT)**
@@ -92,6 +93,28 @@ python3 make_contact_sheet.py --out contact_sheet.png --font /경로/NotoSansKR-
 - 큐 8종: **X**(휴지) **A**(닫힘) **B**(살짝 벌림) **C**(벌림) **D**(크게 벌림) **E**(오므림) **F**(우/오) + G·H.
 - `render_pilot.py`의 `SHOTS`(샷별 입 좌표·지우개 사각형)는 **편마다 다시 재야 합니다.** 상세: **[`cheose-lipsync/README.md`](cheose-lipsync/README.md)**
 
+## 빠른 시작 ③ — 모션 (팅사원·에대리)
+
+```bash
+cd motion-fx
+
+# 1) 정지 아트 한 장에 카메라 무빙 (줌인 5초)
+python3 motion_fx.py kenburns art/cut01.png out/zoom.mp4 --preset zoom_in --dur 5 --zoom 1.18
+
+# 2) 여러 컷 + 셰이크 + 파츠(job.json) → 5초 클립
+python3 motion_fx.py make job.json out/pilot.mp4
+
+# 3) 이미 렌더된 영상 위에 파츠만 얹기(오디오 유지)
+python3 motion_fx.py overlay out/pilot.mp4 parts.json out/pilot_parts.mp4
+
+# 4) 떨림·포맷 자동 검수 / 자체 시험
+python3 motion_fx.py measure out/pilot.mp4 --window 2.0 3.3
+python3 motion_fx.py selftest
+```
+
+- 같은 팬에서 `ffmpeg zoompan` 떨림 **1.237px** → motion_fx **0.038px**(실측). 이유·수치: **[`motion-fx/README.md`](motion-fx/README.md)**
+- 파츠(눈깜박임·식은땀·느낌표) 좌표는 최종 영상 픽셀 기준 — `cheose-lipsync` 좌표 모델과 같습니다.
+
 ---
 
 ## 이 버전에서 고친 버그 (2026-11-19 파일럿)
@@ -103,6 +126,8 @@ python3 make_contact_sheet.py --out contact_sheet.png --font /경로/NotoSansKR-
 | `vertical_pack.sh` | `--ass`로 자막을 넣어도 폰트를 못 찾아 대체 폰트로 렌더 | `--fonts` 옵션 추가(`fontsdir=`) |
 | `vertical_pack.sh` | `--up neighbor`/`lanczos`를 줘도 둘 다 lanczos로 렌더 | 지정 필터를 그대로 쓰도록 수정 |
 | `vertical_pack.sh` | xbr 배율이 자동(320→1080이면 xbr4)이라 3배 고정 불가 | `--xbr-n` 옵션 추가 |
+| `qc_check.py` | `cropdetect`가 결과를 못 내면 "검은 바 없음"을 **PASS로 통과**시킴(검사를 못 했는데 통과) | `[FAIL] 검은 바 자동검출 실패 (수동 확인 필요)`로 보고, 요약에 "자동검출 불가 항목 포함" 표시. JSON에 `crop_detected` 추가 |
+| `vertical_pack.sh` | `--no-crop --up xbr`(=`--xbr-n` 없음)에서 원본 폭이 작으면 `xbr=4`로도 1080에 못 미쳐 **`flags=xbr` 이라는 없는 옵션으로 떨어져 렌더 실패**(240x180 실측) | 입력 폭을 ffprobe로 읽고(없으면 ffmpeg 헤더 파싱) 정수배를 계산, 4배로도 부족하면 `xbr=4 + scale flags=neighbor`. `--xbr-n` 은 2·3·4만 허용 |
 
 ---
 

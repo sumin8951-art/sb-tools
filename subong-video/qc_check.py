@@ -90,27 +90,38 @@ def main():
                    f'{info["width"]}x{info["height"]}'))
     checks.append(("9:16 세로", abs(aspect - 9 / 16) < 0.02, f"aspect {aspect}"))
     checks.append(("프레임레이트 30fps+", info["fps"] >= 29.5, f'{info["fps"]}fps'))
-    checks.append(("검은 바 없음", bar_ratio < 0.02,
-                   (f'{crop["w"]}x{crop["h"]}+{crop["x"]}+{crop["y"]} (여백 {bar_ratio*100:.1f}%)'
-                    if crop else "cropdetect 실패")))
+    # ok=None 은 "검사를 못 했다"(= 통과 아님). cropdetect 가 아무 결과도 못 내면
+    # 검은 바 유무를 판정할 수 없으므로 PASS 로 흘리지 않고 FAIL + 수동 확인으로 보고한다.
+    if crop is None:
+        checks.append(("검은 바 없음", None, "검은 바 자동검출 실패 (수동 확인 필요)"))
+    else:
+        checks.append(("검은 바 없음", bar_ratio < 0.02,
+                       f'{crop["w"]}x{crop["h"]}+{crop["x"]}+{crop["y"]} (여백 {bar_ratio*100:.1f}%)'))
     checks.append(("5초당 1회 장면전환", max_gap <= 5.0,
                    f"컷 {len(cuts_v)}개 / 최대 간격 {max_gap}s"))
     if lufs is not None:
         checks.append(("음량 -14 LUFS ±3", abs(lufs + 14) <= 3, f"{lufs} LUFS"))
 
     if a.json:
-        print(json.dumps({"info": info, "crop": crop, "cuts": cuts_v, "gaps": gaps,
-                          "lufs": lufs, "checks": checks}, ensure_ascii=False, indent=1))
+        print(json.dumps({"info": info, "crop": crop, "crop_detected": crop is not None,
+                          "cuts": cuts_v, "gaps": gaps, "lufs": lufs, "checks": checks},
+                         ensure_ascii=False, indent=1))
         return
 
     print(f'\n■ {a.video}')
     print(f'  {info["width"]}x{info["height"]} · {info["fps"]}fps · {info["duration"]}s · '
           f'{info["vcodec"]} · 오디오 {"있음" if info["audio"] else "없음"}')
     print(f'  컷 타임: {", ".join(str(c) for c in cuts_v) if cuts_v else "없음"}')
+    unverified = 0
     for name, ok, detail in checks:
-        print(f'  [{"PASS" if ok else "FAIL"}] {name:<16} {detail}')
-    ng = sum(1 for _, ok, _ in checks if not ok)
-    print(f'  → {"전항목 통과" if ng == 0 else str(ng) + "항목 확인 필요"}\n')
+        if ok is None:
+            unverified += 1
+            print(f'  [FAIL] {detail}')
+        else:
+            print(f'  [{"PASS" if ok else "FAIL"}] {name:<16} {detail}')
+    ng = sum(1 for _, ok, _ in checks if ok is not True)
+    print(f'  → {"전항목 통과" if ng == 0 else str(ng) + "항목 확인 필요"}'
+          + (" (자동검출 불가 항목 포함 — 눈으로 확인)" if unverified else "") + "\n")
 
 
 if __name__ == "__main__":
